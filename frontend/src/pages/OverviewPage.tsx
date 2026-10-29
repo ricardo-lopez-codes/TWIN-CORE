@@ -45,8 +45,8 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Prototype threshold disclaimer banner */}
-      <div className="bg-white border border-blue-100 rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs font-sans text-slate-700 shadow-card">
+      {/* Prototype threshold disclaimer banner (Hidden on mobile phone as requested) */}
+      <div className="hidden sm:flex bg-white border border-blue-100 rounded-xl px-4 py-3 items-center justify-between gap-3 text-xs font-sans text-slate-700 shadow-card">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
             <Sliders className="w-4 h-4" />
@@ -60,12 +60,17 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
             </span>
           </div>
         </div>
+        <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+          Prototype limits, not certified flight limits
+        </span>
+      </div>
 
-        {/* View Mode Switcher Pill */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-mono">
+      {/* View Mode Switcher Pill */}
+      <div className="flex items-center justify-center sm:justify-end">
+        <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-mono w-full sm:w-auto shadow-xs">
           <button
             onClick={() => setViewMode('split')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
               viewMode === 'split'
                 ? 'bg-white text-blue-700 font-bold shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -76,7 +81,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
           </button>
           <button
             onClick={() => setViewMode('3d')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
               viewMode === '3d'
                 ? 'bg-white text-blue-700 font-bold shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -87,7 +92,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
           </button>
           <button
             onClick={() => setViewMode('charts')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
               viewMode === 'charts'
                 ? 'bg-white text-blue-700 font-bold shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
