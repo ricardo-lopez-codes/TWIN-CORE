@@ -44,27 +44,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
   const [viewMode, setViewMode] = useState<'split' | '3d' | 'charts'>('split');
 
   return (
-    <div className="space-y-6">
-      {/* Prototype threshold disclaimer banner (Hidden on mobile phone as requested) */}
-      <div className="hidden sm:flex bg-white border border-blue-100 rounded-xl px-4 py-3 items-center justify-between gap-3 text-xs font-sans text-slate-700 shadow-card">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
-            <Sliders className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="font-semibold text-slate-800">
-              Active Envelope: Ladakh High-Altitude Field Prototype
-            </span>
-            <span className="text-slate-500 ml-2 text-[11px]">
-              (3,500m – 5,000m ASL Barometric Baseline)
-            </span>
-          </div>
-        </div>
-        <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
-          Prototype limits, not certified flight limits
-        </span>
-      </div>
-
+    <div className="space-y-5">
       {/* View Mode Switcher Pill */}
       <div className="flex items-center justify-center sm:justify-end">
         <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-mono w-full sm:w-auto shadow-xs">
