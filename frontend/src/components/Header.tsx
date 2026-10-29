@@ -75,8 +75,10 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {/* Internet-Synchronized Reference Clock Block */}
-        <NetworkClock />
+        {/* Internet-Synchronized Reference Clock Block (Hidden on mobile phones, visible on PC & tablets) */}
+        <div className="hidden sm:block">
+          <NetworkClock />
+        </div>
       </div>
     </header>
   );
