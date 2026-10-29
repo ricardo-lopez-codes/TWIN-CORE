@@ -51,16 +51,16 @@ export const NetworkClock: React.FC = () => {
     }
     if (timeInfo.status === 'SYNCED') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-mono font-bold border border-emerald-200">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-mono font-bold border border-emerald-200 shrink-0">
           <Globe className="w-2.5 h-2.5 text-emerald-600" />
-          INTERNET SYNCED
+          <span className="hidden sm:inline">INTERNET </span>SYNCED
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-mono font-bold border border-slate-200">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-mono font-bold border border-slate-200 shrink-0">
         <Clock className="w-2.5 h-2.5 text-slate-500" />
-        LOCAL CLOCK
+        <span className="hidden sm:inline">LOCAL </span>CLOCK
       </span>
     );
   };
@@ -82,8 +82,8 @@ export const NetworkClock: React.FC = () => {
           </div>
           <span className="text-[10px] font-mono text-slate-500 flex items-center gap-1">
             <span>{timeInfo.tzAbbreviation}</span>
-            <span className="text-slate-300">•</span>
-            <span>{timeInfo.formattedDate}</span>
+            <span className="text-slate-300 hidden sm:inline">•</span>
+            <span className="hidden sm:inline">{timeInfo.formattedDate}</span>
           </span>
         </div>
         <ChevronDown className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform ${isOpen ? 'rotate-180' : ''}`} />

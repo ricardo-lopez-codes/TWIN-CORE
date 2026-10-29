@@ -277,23 +277,23 @@ export const Chamber3D: React.FC<Chamber3DProps> = ({
       </div>
 
       {/* Actuator Status Chips */}
-      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-[11px] font-mono bg-slate-900/90 backdrop-blur-md p-2.5 rounded-xl border border-slate-800">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-500 uppercase font-semibold">VACUUM PUMP:</span>
+      <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-[11px] font-mono bg-slate-900/90 backdrop-blur-md p-2 rounded-xl border border-slate-800">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-500 uppercase font-semibold">PUMP:</span>
             <span className={`px-2 py-0.5 rounded font-bold ${pumpState === 'ACTIVE' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : 'bg-slate-800 text-slate-400'}`}>
               {pumpState}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-slate-500 uppercase font-semibold">VENT VALVE:</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-500 uppercase font-semibold">VALVE:</span>
             <span className={`px-2 py-0.5 rounded font-bold ${valveState.includes('OPEN') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-slate-800 text-slate-400'}`}>
               {valveState}
             </span>
           </div>
         </div>
         <div className="text-slate-400 hidden sm:block">
-          Interactive 3D Viewport
+          Interactive Viewport
         </div>
       </div>
     </div>

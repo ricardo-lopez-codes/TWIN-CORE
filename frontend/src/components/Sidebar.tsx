@@ -9,7 +9,8 @@ import {
   ScrollText,
   Sliders,
   Radio,
-  Mountain
+  Mountain,
+  X
 } from 'lucide-react';
 import { DataMode } from '../types';
 
@@ -28,13 +29,17 @@ interface SidebarProps {
   onSelectPage: (page: PageId) => void;
   activeMode: DataMode;
   unreadWarningCount?: number;
+  onCloseMobile?: () => void;
+  className?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentPage,
   onSelectPage,
   activeMode,
-  unreadWarningCount = 0
+  unreadWarningCount = 0,
+  onCloseMobile,
+  className = ''
 }) => {
   const navItems = [
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -52,14 +57,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'settings', label: 'Settings', icon: <Sliders className="w-4 h-4" /> }
   ];
 
+  const handleItemClick = (id: PageId) => {
+    onSelectPage(id);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
   return (
-    <aside className="w-64 bg-white border-r border-slate-200/90 flex flex-col justify-between shrink-0 select-none shadow-xs">
+    <aside className={`w-64 bg-white border-r border-slate-200/90 flex flex-col justify-between shrink-0 select-none shadow-xs h-full ${className}`}>
       <div>
-        {/* Navigation Section Title */}
-        <div className="px-5 py-4 border-b border-slate-100">
+        {/* Navigation Section Title + Mobile Close */}
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <span className="text-[11px] font-sans font-bold uppercase tracking-wider text-slate-400">
             SYSTEM TELEMETRY
           </span>
+          {onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="md:hidden w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         <nav className="p-3 space-y-1">
@@ -68,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             return (
               <button
                 key={item.id}
-                onClick={() => onSelectPage(item.id as PageId)}
+                onClick={() => handleItemClick(item.id as PageId)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition-all duration-150 ${
                   isActive
                     ? 'bg-blue-50 text-blue-700 font-semibold border border-blue-200 shadow-xs'

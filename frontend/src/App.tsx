@@ -136,6 +136,7 @@ export const App: React.FC = () => {
   const [eventSummary, setEventSummary] = useState<EventSummary>(INITIAL_EVENT_SUMMARY);
   const [timeRange, setTimeRange] = useState<string>('15m');
   const [activeDemoName, setActiveDemoName] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   // Demo States
   const [tempDemoState, setTempDemoState] = useState<TempDemoState>(INITIAL_TEMP_DEMO);
@@ -265,16 +266,39 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
-      {/* Sidebar Navigation */}
+      {/* Desktop Sidebar Navigation */}
       <Sidebar
         currentPage={currentPage}
         onSelectPage={setCurrentPage}
         activeMode={mode}
         unreadWarningCount={eventSummary.active_warnings + eventSummary.critical_faults}
+        className="hidden md:flex"
       />
 
+      {/* Mobile Sidebar Overlay Drawer */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 flex md:hidden">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          {/* Slide-in Drawer */}
+          <div className="relative z-50 flex flex-col w-72 max-w-[85vw] h-full bg-white shadow-2xl animate-in slide-in-from-left duration-200">
+            <Sidebar
+              currentPage={currentPage}
+              onSelectPage={setCurrentPage}
+              activeMode={mode}
+              unreadWarningCount={eventSummary.active_warnings + eventSummary.critical_faults}
+              onCloseMobile={() => setIsMobileMenuOpen(false)}
+              className="w-full border-r-0"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
         {/* Top Header */}
         <Header
           mode={mode}
@@ -284,10 +308,12 @@ export const App: React.FC = () => {
           activeDemoName={activeDemoName}
           rssi={reading.lora_rssi}
           snr={reading.lora_snr}
+          onToggleMobileSidebar={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          isMobileSidebarOpen={isMobileMenuOpen}
         />
 
         {/* Scrollable Page Body */}
-        <main className="flex-1 overflow-y-auto p-6 bg-slate-50/70">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 bg-slate-50/70">
           <div className="max-w-7xl mx-auto">{renderContent()}</div>
         </main>
       </div>

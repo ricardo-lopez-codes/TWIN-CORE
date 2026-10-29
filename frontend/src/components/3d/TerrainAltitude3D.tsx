@@ -272,23 +272,23 @@ export const TerrainAltitude3D: React.FC<TerrainAltitude3DProps> = ({
       </div>
 
       {/* Bottom Altitude Legend */}
-      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-[11px] font-mono bg-slate-900/90 backdrop-blur-md p-2.5 rounded-xl border border-slate-800 text-slate-300">
-        <div className="flex items-center gap-4">
+      <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-[11px] font-mono bg-slate-900/90 backdrop-blur-md p-2 rounded-xl border border-slate-800 text-slate-300">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" />
+            <span className="w-2 h-2 rounded-full bg-cyan-400 inline-block shrink-0" />
             <span>Leh (3,500m)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" />
-            <span>Siachen Base (4,200m)</span>
+            <span className="w-2 h-2 rounded-full bg-amber-400 inline-block shrink-0" />
+            <span>Siachen (4,200m)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+            <span className="w-2 h-2 rounded-full bg-rose-500 inline-block shrink-0" />
             <span>Chang La (5,360m)</span>
           </div>
         </div>
         <div className="text-slate-500 hidden sm:block">
-          Interactive: Drag to Rotate • Scroll to Zoom
+          Drag: Orbit • Scroll: Zoom
         </div>
       </div>
     </div>

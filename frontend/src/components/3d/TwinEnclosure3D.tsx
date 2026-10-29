@@ -775,133 +775,128 @@ export const TwinEnclosure3D: React.FC<TwinEnclosure3DProps> = ({
         className="w-full cursor-grab active:cursor-grabbing"
       />
 
-      {/* Top Left Title & Live Altitude Indicator Badge */}
-      <div className="absolute top-4 left-4 flex flex-col gap-1.5 pointer-events-none">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
-          <span className="font-mono text-xs font-bold text-white uppercase tracking-wider">
-            Unit 1 Digital Twin • 3D Telemetry Mesh
+      {/* Top Header Overlay: Unifies Title & Viewport Controls in one responsive flex row */}
+      <div className="absolute top-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 z-10 pointer-events-none">
+        {/* Left: Compact Telemetry Badge */}
+        <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 pointer-events-auto shadow-lg max-w-full">
+          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-ping shrink-0" />
+          <span className="font-mono text-xs font-bold text-white uppercase tracking-wider shrink-0">
+            Unit 1 Twin
           </span>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800">
-            WebGL 3D
-          </span>
+          <span className="text-slate-600 hidden sm:inline">|</span>
+          <div className="flex items-center gap-2 text-[11px] font-mono text-slate-300">
+            <span>T: <strong className="text-white">{temperature.toFixed(1)}°C</strong></span>
+            <span>P: <strong className="text-white">{pressure.toFixed(1)}k</strong></span>
+            <span className="hidden sm:inline">Fan: <strong className={fanState ? 'text-cyan-300' : 'text-slate-400'}>{fanState ? 'ACTIVE' : 'OFF'}</strong></span>
+          </div>
         </div>
-        <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400">
-          <span>T: <strong className="text-white">{temperature.toFixed(1)}°C</strong></span>
-          <span>•</span>
-          <span>P: <strong className="text-white">{pressure.toFixed(1)} kPa</strong></span>
-          <span>•</span>
-          <span>Fan: <strong className={fanState ? 'text-cyan-300' : 'text-slate-400'}>{fanState ? 'ACTIVE' : 'OFF'}</strong></span>
-        </div>
-      </div>
 
-      {/* Top Right Controls Toolbar */}
-      {showControls && (
-        <div className="absolute top-4 right-4 flex items-center gap-2">
-          {/* Preset Camera Selector */}
-          <div className="flex items-center bg-slate-800/90 backdrop-blur-md border border-slate-700/80 rounded-xl p-1 text-xs font-mono text-slate-300 shadow-lg">
+        {/* Right: Camera Presets & Reset Button */}
+        {showControls && (
+          <div className="flex items-center gap-1.5 pointer-events-auto">
+            <div className="flex items-center bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-1 text-[11px] font-mono text-slate-300 shadow-lg">
+              <button
+                onClick={() => handleSetPreset('iso')}
+                className={`px-2 py-1 rounded-lg transition-all ${viewPreset === 'iso' ? 'bg-cyan-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-400'}`}
+                title="Isometric 45° Angle"
+              >
+                ISO
+              </button>
+              <button
+                onClick={() => handleSetPreset('top')}
+                className={`px-2 py-1 rounded-lg transition-all ${viewPreset === 'top' ? 'bg-cyan-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-400'}`}
+                title="Top PCB View"
+              >
+                PCB
+              </button>
+              <button
+                onClick={() => handleSetPreset('thermal')}
+                className={`px-2 py-1 rounded-lg transition-all ${viewPreset === 'thermal' ? 'bg-cyan-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-400'}`}
+                title="Thermal Heatsink View"
+              >
+                HEATSINK
+              </button>
+              <button
+                onClick={() => handleSetPreset('fan')}
+                className={`px-2 py-1 rounded-lg transition-all ${viewPreset === 'fan' ? 'bg-cyan-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-400'}`}
+                title="Blower Exhaust View"
+              >
+                FAN
+              </button>
+            </div>
+
             <button
-              onClick={() => handleSetPreset('iso')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${viewPreset === 'iso' ? 'bg-cyan-600 text-white font-bold' : 'hover:bg-slate-700 text-slate-400'}`}
-              title="Isometric 45° Angle"
+              onClick={handleResetView}
+              className="w-7 h-7 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 flex items-center justify-center transition-colors shadow-lg"
+              title="Reset View"
             >
-              ISO
-            </button>
-            <button
-              onClick={() => handleSetPreset('top')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${viewPreset === 'top' ? 'bg-cyan-600 text-white font-bold' : 'hover:bg-slate-700 text-slate-400'}`}
-              title="Top PCB View"
-            >
-              PCB
-            </button>
-            <button
-              onClick={() => handleSetPreset('thermal')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${viewPreset === 'thermal' ? 'bg-cyan-600 text-white font-bold' : 'hover:bg-slate-700 text-slate-400'}`}
-              title="Thermal Heatsink View"
-            >
-              HEATSINK
-            </button>
-            <button
-              onClick={() => handleSetPreset('fan')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${viewPreset === 'fan' ? 'bg-cyan-600 text-white font-bold' : 'hover:bg-slate-700 text-slate-400'}`}
-              title="Blower Exhaust View"
-            >
-              FAN
+              <RotateCcw className="w-3.5 h-3.5" />
             </button>
           </div>
-
-          {/* Reset Camera */}
-          <button
-            onClick={handleResetView}
-            className="w-8 h-8 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center transition-colors shadow-lg"
-            title="Reset View"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Bottom Floating Tactical Control Bar */}
       {showControls && (
-        <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
+        <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-10">
           {/* Visual Mode Toggles */}
-          <div className="flex items-center gap-2 pointer-events-auto bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-1.5 shadow-xl text-xs font-mono text-slate-300">
+          <div className="flex flex-wrap items-center gap-1.5 pointer-events-auto bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-1 shadow-xl text-[11px] font-mono text-slate-300">
             {/* Exploded View Toggle */}
             <button
               onClick={() => setExploded(!exploded)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all ${
                 exploded
                   ? 'bg-blue-600/30 border-blue-500 text-blue-300'
                   : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
-              <span>{exploded ? 'Collapsed View' : 'Exploded View'}</span>
+              <Layers className="w-3 h-3" />
+              <span>{exploded ? 'Collapsed' : 'Explode'}</span>
             </button>
 
             {/* Thermal IR False-Color Mode */}
             <button
               onClick={() => setThermalIRMode(!thermalIRMode)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all ${
                 thermalIRMode
                   ? 'bg-orange-600/30 border-orange-500 text-orange-300'
                   : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
               }`}
             >
-              <Flame className="w-3.5 h-3.5" />
-              <span>{thermalIRMode ? 'Thermal IR: ON' : 'Thermal IR'}</span>
+              <Flame className="w-3 h-3" />
+              <span>{thermalIRMode ? 'IR: ON' : 'Thermal IR'}</span>
             </button>
 
             {/* Airflow Particles Toggle */}
             <button
               onClick={() => setParticlesActive(!particlesActive)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${
+              className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all ${
                 particlesActive
                   ? 'bg-cyan-600/30 border-cyan-500 text-cyan-300'
                   : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
               }`}
             >
-              <Wind className="w-3.5 h-3.5" />
-              <span>Airflow Stream</span>
+              <Wind className="w-3 h-3" />
+              <span>Airflow</span>
             </button>
 
             {/* Auto-Turntable */}
             <button
               onClick={handleToggleAutoRotate}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all ${
                 autoRotate
                   ? 'bg-purple-600/30 border-purple-500 text-purple-300'
                   : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
               }`}
             >
-              <Compass className="w-3.5 h-3.5" />
+              <Compass className="w-3 h-3" />
               <span>Turntable</span>
             </button>
           </div>
 
           {/* Quick Component Inspect Chips */}
-          <div className="flex items-center gap-1.5 pointer-events-auto bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-1.5 shadow-xl text-[11px] font-mono">
-            <span className="text-slate-500 px-2 flex items-center gap-1">
+          <div className="hidden lg:flex items-center gap-1 pointer-events-auto bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-1 shadow-xl text-[10px] font-mono">
+            <span className="text-slate-500 px-1.5 flex items-center gap-1">
               <Info className="w-3 h-3 text-cyan-400" />
               INSPECT:
             </span>
@@ -909,7 +904,7 @@ export const TwinEnclosure3D: React.FC<TwinEnclosure3DProps> = ({
               <button
                 key={pin.id}
                 onClick={() => setActivePin(pin)}
-                className={`px-2.5 py-1 rounded-lg border transition-all ${
+                className={`px-2 py-0.5 rounded-lg border transition-all ${
                   activePin?.id === pin.id
                     ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold'
                     : 'bg-slate-800/70 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white'

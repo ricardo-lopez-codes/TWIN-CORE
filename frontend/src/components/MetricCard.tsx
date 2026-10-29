@@ -37,50 +37,56 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
   return (
     <Card3D tiltMax={5} scale={1.018} glare={true} className="h-full">
-      <div className={`relative rounded-xl border p-4 shadow-card transition-all duration-200 h-full ${getBorderColor()}`}>
-        {/* Top row: Label, Icon, Status */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            {icon && (
-              <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
-                {icon}
-              </div>
-            )}
-            <span className="text-xs font-semibold text-slate-600 tracking-wide uppercase">{label}</span>
+      <div className={`relative rounded-xl border p-4 shadow-card transition-all duration-200 h-full flex flex-col justify-between ${getBorderColor()}`}>
+        <div>
+          {/* Top row: Label & Icon on left, Status Badge aligned to top-right */}
+          <div className="flex items-start justify-between gap-2 mb-2 min-h-[38px]">
+            <div className="flex items-start gap-2 flex-1 min-w-0">
+              {icon && (
+                <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0 mt-0.5">
+                  {icon}
+                </div>
+              )}
+              <span className="text-xs font-semibold text-slate-600 tracking-wide uppercase leading-snug line-clamp-2">
+                {label}
+              </span>
+            </div>
+            <div className="shrink-0 mt-0.5">
+              <StatusBadge status={isStale ? 'OFFLINE' : status} size="sm" />
+            </div>
           </div>
-          <StatusBadge status={isStale ? 'OFFLINE' : status} size="sm" />
-        </div>
 
-        {/* Main value display */}
-        <div className="flex items-baseline gap-1.5 my-1.5">
-          <span className={`text-2xl lg:text-3xl font-mono font-bold tracking-tight ${
-            isStale 
-              ? 'text-slate-400 line-through' 
-              : normStatus === 'CRITICAL'
-              ? 'text-rose-600'
-              : normStatus === 'WARNING'
-              ? 'text-amber-600'
-              : 'text-slate-900'
-          }`}>
-            {isStale ? '--' : typeof value === 'number' ? value.toFixed(1) : value}
-          </span>
-          <span className="text-xs font-mono font-semibold text-slate-500">{unit}</span>
+          {/* Main value display */}
+          <div className="flex items-baseline gap-1.5 my-1.5">
+            <span className={`text-2xl lg:text-3xl font-mono font-bold tracking-tight ${
+              isStale 
+                ? 'text-slate-400 line-through' 
+                : normStatus === 'CRITICAL'
+                ? 'text-rose-600'
+                : normStatus === 'WARNING'
+                ? 'text-amber-600'
+                : 'text-slate-900'
+            }`}>
+              {isStale ? '--' : typeof value === 'number' ? value.toFixed(1) : value}
+            </span>
+            <span className="text-xs font-mono font-semibold text-slate-500">{unit}</span>
+          </div>
         </div>
 
         {/* Normal Range & Subtitle */}
         <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-          <div>
+          <div className="min-w-0 flex-1">
             {normalRange && (
-              <span className="font-mono">
+              <span className="font-mono block truncate">
                 Target: <span className="font-semibold text-slate-700">{normalRange}</span>
               </span>
             )}
             {subtitle && (
-              <div className="text-[10px] text-slate-400 mt-0.5">{subtitle}</div>
+              <div className="text-[10px] text-slate-400 mt-0.5 truncate">{subtitle}</div>
             )}
           </div>
           {deltaText && (
-            <span className="font-mono text-xs text-slate-500">{deltaText}</span>
+            <span className="font-mono text-xs text-slate-500 shrink-0 ml-1">{deltaText}</span>
           )}
         </div>
       </div>
