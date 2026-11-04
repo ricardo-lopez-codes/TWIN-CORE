@@ -177,3 +177,40 @@ def reset_demo_simulation():
         "status": "reset",
         "demo_state": unified_demo.get_state()
     }
+
+@router.post("/notify/ntfy")
+async def proxy_ntfy_alert(payload: Dict[str, Any] = Body(...)):
+    """
+    Server-side proxy for ntfy.sh alerts.
+    Bypasses browser CORS, ad-blockers, and privacy extensions.
+    """
+    import urllib.request
+    import urllib.parse
+    
+    topic = payload.get("topic", "").strip()
+    title = payload.get("title", "⚠️ TWIN-CORE Equipment Alert")
+    body = payload.get("body", "Threshold breached")
+    priority = payload.get("priority", "high")
+    tags = payload.get("tags", "warning,electric_plug")
+
+    if not topic:
+        raise HTTPException(status_code=400, detail="Missing ntfy topic name")
+
+    url = f"https://ntfy.sh/{urllib.parse.quote(topic)}"
+    req = urllib.request.Request(
+        url,
+        data=body.encode("utf-8"),
+        headers={
+            "Title": title,
+            "Priority": priority,
+            "Tags": tags,
+            "User-Agent": "TWIN-CORE-Alert-System/2.5"
+        },
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return {"status": "success", "http_status": resp.status}
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to dispatch to ntfy.sh: {str(exc)}")

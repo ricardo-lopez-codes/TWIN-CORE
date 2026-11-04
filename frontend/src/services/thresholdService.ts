@@ -105,6 +105,25 @@ export async function dispatchNtfyAlert(
   const cleanTopic = topic.trim();
   if (!cleanTopic) return false;
 
+  // 1. Try server-side proxy first (guaranteed 100% bypass of browser CORS and adblockers)
+  try {
+    const proxyRes = await fetch('/api/notify/ntfy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic: cleanTopic,
+        title,
+        body,
+        priority,
+        tags
+      })
+    });
+    if (proxyRes.ok) return true;
+  } catch (proxyErr) {
+    console.warn('Backend ntfy proxy failed, falling back to direct browser fetch:', proxyErr);
+  }
+
+  // 2. Direct browser fetch fallback
   try {
     const res = await fetch(`https://ntfy.sh/${encodeURIComponent(cleanTopic)}`, {
       method: 'POST',
@@ -117,7 +136,7 @@ export async function dispatchNtfyAlert(
     });
     return res.ok;
   } catch (err) {
-    console.error('Error dispatching ntfy notification:', err);
+    console.error('Error dispatching ntfy notification directly:', err);
     return false;
   }
 }
