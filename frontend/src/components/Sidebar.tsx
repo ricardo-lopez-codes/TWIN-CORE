@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Terminal,
   LayoutDashboard,
   Activity,
   MapPin,
@@ -18,6 +19,7 @@ import {
 import { DataMode } from '../types';
 
 export type PageId =
+  | 'twincore_os'
   | 'overview'
   | 'live'
   | 'gps'
@@ -49,6 +51,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   className = ''
 }) => {
   const navItems = [
+    {
+      id: 'twincore_os',
+      label: 'TWINCORE OS (Serial)',
+      icon: <Terminal className="w-4 h-4 text-[#00f2fe]" />,
+      badgeText: 'LIVE'
+    },
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'live', label: 'Live Monitoring', icon: <Activity className="w-4 h-4 text-emerald-600" /> },
     { id: 'gps', label: 'GPS Tracking', icon: <MapPin className="w-4 h-4 text-cyan-600" /> },
@@ -112,6 +120,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {item.badge && (
                   <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-300">
                     {item.badge}
+                  </span>
+                )}
+                {/* @ts-ignore */}
+                {item.badgeText && (
+                  <span className="px-1.5 py-0.5 text-[9px] font-mono font-black rounded-md bg-cyan-950 text-[#00f2fe] border border-cyan-500/40 animate-pulse shadow-[0_0_8px_rgba(0,242,254,0.4)]">
+                    {/* @ts-ignore */}
+                    {item.badgeText}
                   </span>
                 )}
               </button>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Sidebar, PageId } from './components/Sidebar';
+import { TwincoreOsPage } from './pages/TwincoreOsPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { LiveMonitoringPage } from './pages/LiveMonitoringPage';
 import { GpsTrackingPage } from './pages/GpsTrackingPage';
@@ -251,6 +252,8 @@ export const App: React.FC = () => {
 
   const renderContent = () => {
     switch (currentPage) {
+      case 'twincore_os':
+        return <TwincoreOsPage />;
       case 'overview':
         return (
           <OverviewPage
