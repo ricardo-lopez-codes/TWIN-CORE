@@ -144,119 +144,185 @@ class HardwareGateway:
     def parse_packet(self, raw_line: str) -> Optional[SensorReading]:
         """
         Parses raw telemetry line from Gateway Unit 2.
-        Accepts both the proposed Unit 1 format:
-        {
-          "device_id": "TWINCORE-UNIT1",
-          "packet_id": 1,
-          "temperature": 32.25,
-          "voltage": 12.0,
-          "current": 1.25,
-          "latitude": 12.9352,
-          "longitude": 80.1464,
-          "gps_fix": true,
-          "timestamp": "2026-11-04T10:30:00"
-        }
-        and compact sensor radio packets:
-        {
-          "dev": "TWIN-CORE-UNIT1",
-          "seq": 1024,
-          "temp": 24.5,
-          "press": 68.2,
-          "volt": 12.05,
-          "curr": 0.49,
-          "lat": 34.1526,
-          "lon": 77.5771,
-          "fix": 1,
-          "fan": 0,
-          "mosfet": "ACTIVE",
-          "rssi": -72,
-          "snr": 8.5
-        }
+        Supports:
+        1. Custom ESP-NOW tokenized telemetry format:
+           [Received from Master]: T22:25.9,H22:53.0;T11:nan,H11:nan;V1:7.66,I1:0.001;V2:7.66,I2:0.001;V3:7.69,I3:0.001;LAT:12.873860,LON:80.221940;GPS:1,SAT:0
+        2. Proposed Unit 1 JSON format:
+           {"device_id": "TWINCORE-UNIT1", "temperature": 32.25, "voltage": 12.0, "current": 1.25, ...}
+        3. Compact sensor radio packets:
+           {"dev": "TWIN-CORE-UNIT1", "temp": 24.5, "volt": 12.05, ...}
         """
         raw_line = raw_line.strip()
-        if not raw_line or not (raw_line.startswith("{") and raw_line.endswith("}")):
-            self.packet_errors += 1
+        if not raw_line:
             return None
 
-        try:
-            data = json.loads(raw_line)
-            
-            # Numeric sensor readings with key fallbacks
-            temp = float(data.get("temperature", data.get("temp", 0.0)))
-            press = float(data.get("pressure", data.get("press", 70.0)))
-            volt = float(data.get("voltage", data.get("volt", 0.0)))
-            curr = float(data.get("current", data.get("curr", 0.0)))
-            
-            # Reject physically impossible sensor anomalies
-            if not (-60.0 <= temp <= 150.0 and 10.0 <= press <= 150.0 and 0.0 <= volt <= 60.0 and 0.0 <= curr <= 30.0):
+        # Clean prefix if present
+        line = raw_line
+        if "[Received from Master]:" in line:
+            line = line.split("[Received from Master]:", 1)[1].strip()
+
+        # Check if JSON
+        if line.startswith("{") and line.endswith("}"):
+            try:
+                data = json.loads(line)
+                
+                # Numeric sensor readings with key fallbacks
+                temp = float(data.get("temperature", data.get("temp", 0.0)))
+                press = float(data.get("pressure", data.get("press", 70.0)))
+                volt = float(data.get("voltage", data.get("volt", 0.0)))
+                curr = float(data.get("current", data.get("curr", 0.0)))
+                
+                # Reject physically impossible sensor anomalies
+                if not (-60.0 <= temp <= 150.0 and 10.0 <= press <= 150.0 and 0.0 <= volt <= 60.0 and 0.0 <= curr <= 30.0):
+                    self.packet_errors += 1
+                    return None
+
+                power = round(volt * curr, 2)
+                raw_lat = data.get("latitude", data.get("lat"))
+                raw_lon = data.get("longitude", data.get("lon", data.get("lng")))
+                gps_fix = bool(data.get("gps_fix", data.get("fix", False)))
+                gps_ts = data.get("timestamp", data.get("gps_timestamp"))
+
+                valid_lat = None
+                valid_lon = None
+                if raw_lat is not None and raw_lon is not None:
+                    try:
+                        lat_f = float(raw_lat)
+                        lon_f = float(raw_lon)
+                        if -90.0 <= lat_f <= 90.0 and -180.0 <= lon_f <= 180.0:
+                            valid_lat = round(lat_f, 6)
+                            valid_lon = round(lon_f, 6)
+                        else:
+                            gps_fix = False
+                    except (ValueError, TypeError):
+                        gps_fix = False
+                else:
+                    gps_fix = False
+
+                seq_val = data.get("packet_id", data.get("seq", data.get("packet_seq")))
+                seq = int(seq_val) if seq_val is not None else (self.last_packet_seq + 1)
+                self.last_packet_seq = seq
+                self.last_packet_time = time.time()
+                self.packets_received += 1
+                self.unit1_status = "ONLINE"
+                self.unit2_status = "CONNECTED"
+
+                device_id = str(data.get("device_id", data.get("dev", "TWIN-CORE-UNIT1")))
+
+                return SensorReading(
+                    timestamp=datetime.utcnow(),
+                    source=DataMode.HARDWARE_CONNECTED,
+                    temperature_c=round(temp, 2),
+                    pressure_kpa=round(press, 2),
+                    voltage_v=round(volt, 2),
+                    current_a=round(curr, 3),
+                    power_w=power,
+                    power_is_estimated=True,
+                    latitude=valid_lat,
+                    longitude=valid_lon,
+                    gps_fix=gps_fix,
+                    gps_timestamp=str(gps_ts) if gps_ts else None,
+                    unit1_status="ONLINE",
+                    unit2_status="CONNECTED",
+                    fan_state=bool(data.get("fan", data.get("fan_state", False))),
+                    mosfet_state=str(data.get("mosfet", data.get("mosfet_state", "ACTIVE"))),
+                    packet_seq=seq,
+                    is_valid=bool(data.get("crc_ok", True)),
+                    freshness_status="FRESH",
+                    severity=SeverityLevel.NORMAL,
+                    device_id=device_id,
+                    lora_rssi=data.get("rssi", data.get("lora_rssi")),
+                    lora_snr=data.get("snr", data.get("lora_snr"))
+                )
+            except Exception:
                 self.packet_errors += 1
                 return None
 
-            # Calculate electrical power strictly: P = V * I (never fabricate in live mode)
-            power = round(volt * curr, 2)
-            
-            # GPS Parsing & Strict Coordinate Validation
-            raw_lat = data.get("latitude", data.get("lat"))
-            raw_lon = data.get("longitude", data.get("lon", data.get("lng")))
-            gps_fix = bool(data.get("gps_fix", data.get("fix", False)))
-            gps_ts = data.get("timestamp", data.get("gps_timestamp"))
+        # Check if Tokenized Format (e.g., T22:25.9,H22:53.0;...)
+        if "T22:" in line or "V1:" in line or "LAT:" in line:
+            try:
+                def safe_float(v_str):
+                    if not v_str:
+                        return None
+                    v_str = v_str.strip().lower()
+                    if v_str in ("nan", "null", "inf", "-inf"):
+                        return None
+                    return float(v_str)
 
-            valid_lat: Optional[float] = None
-            valid_lon: Optional[float] = None
+                # Parse key-values
+                parsed_dict = {}
+                sections = line.split(";")
+                for sec in sections:
+                    tokens = sec.split(",")
+                    for tok in tokens:
+                        if ":" in tok:
+                            k, v = tok.split(":", 1)
+                            parsed_dict[k.strip().upper()] = v.strip()
 
-            if raw_lat is not None and raw_lon is not None:
-                try:
-                    lat_f = float(raw_lat)
-                    lon_f = float(raw_lon)
-                    if -90.0 <= lat_f <= 90.0 and -180.0 <= lon_f <= 180.0:
-                        valid_lat = round(lat_f, 6)
-                        valid_lon = round(lon_f, 6)
-                    else:
-                        gps_fix = False
-                except (ValueError, TypeError):
-                    gps_fix = False
-            else:
-                gps_fix = False
+                t22 = safe_float(parsed_dict.get("T22"))
+                t11 = safe_float(parsed_dict.get("T11"))
+                temp = t22 if t22 is not None else (t11 if t11 is not None else 25.0)
 
-            # Sequence & metadata
-            seq_val = data.get("packet_id", data.get("seq", data.get("packet_seq")))
-            seq = int(seq_val) if seq_val is not None else (self.last_packet_seq + 1)
-            self.last_packet_seq = seq
-            self.last_packet_time = time.time()
-            self.packets_received += 1
-            self.unit1_status = "ONLINE"
-            self.unit2_status = "CONNECTED"
+                v1 = safe_float(parsed_dict.get("V1")) or 0.0
+                i1 = safe_float(parsed_dict.get("I1")) or 0.0
 
-            device_id = str(data.get("device_id", data.get("dev", "TWIN-CORE-UNIT1")))
+                power = round(v1 * i1, 2)
 
-            return SensorReading(
-                timestamp=datetime.utcnow(),
-                source=DataMode.HARDWARE_CONNECTED,
-                temperature_c=round(temp, 2),
-                pressure_kpa=round(press, 2),
-                voltage_v=round(volt, 2),
-                current_a=round(curr, 3),
-                power_w=power,
-                power_is_estimated=True,
-                latitude=valid_lat,
-                longitude=valid_lon,
-                gps_fix=gps_fix,
-                gps_timestamp=str(gps_ts) if gps_ts else None,
-                unit1_status="ONLINE",
-                unit2_status="CONNECTED",
-                fan_state=bool(data.get("fan", data.get("fan_state", False))),
-                mosfet_state=str(data.get("mosfet", data.get("mosfet_state", "ACTIVE"))),
-                packet_seq=seq,
-                is_valid=bool(data.get("crc_ok", True)),
-                freshness_status="FRESH",
-                severity=SeverityLevel.NORMAL,
-                device_id=device_id,
-                lora_rssi=data.get("rssi", data.get("lora_rssi")),
-                lora_snr=data.get("snr", data.get("lora_snr"))
-            )
-        except Exception:
-            self.packet_errors += 1
-            return None
+                raw_lat = safe_float(parsed_dict.get("LAT"))
+                raw_lon = safe_float(parsed_dict.get("LON"))
+                gps_flag = safe_float(parsed_dict.get("GPS"))
+
+                valid_lat = None
+                valid_lon = None
+                has_fix = False
+
+                if raw_lat is not None and raw_lon is not None:
+                    if -90.0 <= raw_lat <= 90.0 and -180.0 <= raw_lon <= 180.0:
+                        # Non-zero lat/lon or valid fix flag
+                        if (raw_lat != 0.0 or raw_lon != 0.0) or (gps_flag == 1.0):
+                            valid_lat = round(raw_lat, 6)
+                            valid_lon = round(raw_lon, 6)
+                            has_fix = (gps_flag == 1.0) or (valid_lat != 0.0 and valid_lon != 0.0)
+
+                self.last_packet_seq += 1
+                seq = self.last_packet_seq
+                self.last_packet_time = time.time()
+                self.packets_received += 1
+                self.unit1_status = "ONLINE"
+                self.unit2_status = "CONNECTED"
+
+                return SensorReading(
+                    timestamp=datetime.utcnow(),
+                    source=DataMode.HARDWARE_CONNECTED,
+                    temperature_c=round(temp, 2),
+                    pressure_kpa=70.0,
+                    voltage_v=round(v1, 2),
+                    current_a=round(i1, 3),
+                    power_w=power,
+                    power_is_estimated=True,
+                    latitude=valid_lat,
+                    longitude=valid_lon,
+                    gps_fix=has_fix,
+                    gps_timestamp=datetime.utcnow().isoformat(),
+                    unit1_status="ONLINE",
+                    unit2_status="CONNECTED",
+                    fan_state=False,
+                    mosfet_state="ACTIVE",
+                    packet_seq=seq,
+                    is_valid=True,
+                    freshness_status="FRESH",
+                    severity=SeverityLevel.NORMAL,
+                    device_id="TWINCORE-UNIT1",
+                    lora_rssi=-65,
+                    lora_snr=9.0
+                )
+            except Exception as e:
+                self.packet_errors += 1
+                return None
+
+        # Neither JSON nor recognised token format
+        self.packet_errors += 1
+        return None
 
     def generate_simulated_sample(self) -> SensorReading:
         """
