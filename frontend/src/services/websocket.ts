@@ -1,4 +1,4 @@
-import { SensorReading, EventSummary, TempDemoState, PressureDemoState, PowerDemoState, DataMode } from '../types';
+import { SensorReading, EventSummary, TempDemoState, PressureDemoState, PowerDemoState, UnifiedDemoState, DataMode } from '../types';
 
 export interface LiveTelemetryMessage {
   type: string;
@@ -6,6 +6,7 @@ export interface LiveTelemetryMessage {
   active_demo: string | null;
   reading: SensorReading;
   demo_states: {
+    unified?: UnifiedDemoState;
     temperature: TempDemoState;
     pressure: PressureDemoState;
     power: PowerDemoState;

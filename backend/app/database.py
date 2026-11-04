@@ -21,8 +21,23 @@ def get_db():
 
 def init_db():
     from app.models.db_models import DBReading, DBEvent, DBThreshold
+    from sqlalchemy import inspect, text
     Base.metadata.create_all(bind=engine)
     
+    # Graceful migration for existing SQLite DBs: add GPS columns if missing
+    inspector = inspect(engine)
+    if "readings" in inspector.get_table_names():
+        columns = [col["name"] for col in inspector.get_columns("readings")]
+        with engine.begin() as conn:
+            if "latitude" not in columns:
+                conn.execute(text("ALTER TABLE readings ADD COLUMN latitude FLOAT"))
+            if "longitude" not in columns:
+                conn.execute(text("ALTER TABLE readings ADD COLUMN longitude FLOAT"))
+            if "gps_fix" not in columns:
+                conn.execute(text("ALTER TABLE readings ADD COLUMN gps_fix BOOLEAN DEFAULT 0"))
+            if "gps_timestamp" not in columns:
+                conn.execute(text("ALTER TABLE readings ADD COLUMN gps_timestamp VARCHAR"))
+
     # Initialize default thresholds if not present
     db = SessionLocal()
     try:

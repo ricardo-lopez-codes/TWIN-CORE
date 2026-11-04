@@ -532,3 +532,186 @@ class PowerDemo(BaseDemo):
 temp_demo = TemperatureDemo()
 pressure_demo = PressureDemo()
 power_demo = PowerDemo()
+
+class UnifiedDemoEngine(BaseDemo):
+    """
+    Comprehensive full-system demo engine for TWIN-CORE.
+    Provides coordinated, realistic simulation across:
+    - Temperature thermal cycling with warning triggers and recovery cooling
+    - Voltage rail dynamics
+    - Current load variations
+    - Real-time derived power P = V * I
+    - GPS coordinate path movement with OpenStreetMap tracking
+    Strictly isolated from live hardware telemetry.
+    """
+    def __init__(self):
+        super().__init__("Unified System Demo")
+        self.reset()
+
+    def reset(self):
+        self.running = False
+        self.step_index = 0
+        self.speed = 1.0
+        self.phase = "IDLE"  # IDLE, RAMPING_UP, WARNING_TRIGGERED, COOLING_RECOVERY, NORMALIZED
+        
+        # Nominal baseline conditions
+        self.temperature_c = 24.8
+        self.voltage_v = 12.0
+        self.current_a = 0.50
+        self.power_w = 6.00
+        self.pressure_kpa = 69.5
+        
+        # Ladakh base location (Leh High-Altitude Base: 34.1526 N, 77.5771 E)
+        self.base_lat = 34.1526
+        self.base_lon = 77.5771
+        self.latitude = 34.1526
+        self.longitude = 77.5771
+        self.gps_fix = True
+        
+        # Thermal cycle parameters
+        self.thermal_direction = 1  # 1 = heating up, -1 = cooling down
+        self.warn_threshold = 60.0
+        self.crit_threshold = 70.0
+        self.recovery_threshold = 57.0
+        self.severity = SeverityLevel.NORMAL
+        
+        # Actuators
+        self.simulated_fan_state = False
+        self.simulated_mosfet_state = "ACTIVE"
+        self.recovery_status = "NORMAL"
+        
+        self.timeline: List[Dict[str, Any]] = []
+        self.record_timeline_event("Unified Demo Engine reset to nominal Ladakh baseline.", SeverityLevel.NORMAL)
+
+    def start(self):
+        self.running = True
+        if self.phase == "IDLE":
+            self.phase = "RAMPING_UP"
+            self.thermal_direction = 1
+        self.record_timeline_event(f"Simulation started at {self.speed}x speed.", SeverityLevel.NORMAL)
+
+    def pause(self):
+        self.running = False
+        self.record_timeline_event("Simulation paused.", SeverityLevel.NORMAL)
+
+    def stop(self):
+        self.running = False
+        self.phase = "IDLE"
+        self.record_timeline_event("Simulation stopped.", SeverityLevel.NORMAL)
+
+    def set_speed(self, speed: float):
+        self.speed = max(0.2, min(10.0, float(speed)))
+        self.record_timeline_event(f"Simulation speed set to {self.speed}x.", SeverityLevel.NORMAL)
+
+    def set_manual_readings(self, temp: Optional[float] = None, volt: Optional[float] = None, curr: Optional[float] = None):
+        if temp is not None:
+            self.temperature_c = round(float(temp), 2)
+        if volt is not None:
+            self.voltage_v = round(float(volt), 2)
+        if curr is not None:
+            self.current_a = round(float(curr), 3)
+        self.power_w = round(self.voltage_v * self.current_a, 2)
+        self._evaluate_thresholds()
+        self.record_timeline_event("Manual reading overrides applied in demo mode.")
+
+    def _evaluate_thresholds(self):
+        if self.temperature_c >= self.crit_threshold:
+            self.severity = SeverityLevel.CRITICAL
+            self.simulated_fan_state = True
+            self.simulated_mosfet_state = "DERATED"
+            self.recovery_status = "CRITICAL_COOLING"
+        elif self.temperature_c >= self.warn_threshold:
+            self.severity = SeverityLevel.WARNING
+            self.simulated_fan_state = True
+            self.recovery_status = "WARNING_HIGH_TEMP"
+        elif self.temperature_c <= self.recovery_threshold and self.thermal_direction == -1:
+            self.severity = SeverityLevel.NORMAL
+            self.simulated_fan_state = False
+            self.simulated_mosfet_state = "ACTIVE"
+            self.recovery_status = "RECOVERED_NORMAL"
+        else:
+            if self.severity != SeverityLevel.WARNING and self.severity != SeverityLevel.CRITICAL:
+                self.severity = SeverityLevel.NORMAL
+
+    def tick(self):
+        if not self.running:
+            return
+
+        self.step_index += 1
+        rate = self.speed
+
+        # 1. Temperature Thermal Cycling
+        if self.thermal_direction == 1:
+            # Heating ramp up
+            self.temperature_c = round(self.temperature_c + 0.65 * rate, 2)
+            if self.temperature_c >= self.crit_threshold:
+                if self.phase != "CRITICAL_TRIGGERED":
+                    self.phase = "CRITICAL_TRIGGERED"
+                    self.record_timeline_event(f"CRITICAL: Temperature reached {self.temperature_c}°C (≥ {self.crit_threshold}°C)!", SeverityLevel.CRITICAL)
+                # Auto-engage cooling at peak
+                self.thermal_direction = -1
+                self.simulated_fan_state = True
+            elif self.temperature_c >= self.warn_threshold:
+                if self.phase != "WARNING_TRIGGERED":
+                    self.phase = "WARNING_TRIGGERED"
+                    self.record_timeline_event(f"WARNING: Temperature reached {self.temperature_c}°C (≥ {self.warn_threshold}°C). Warning indicator active.", SeverityLevel.WARNING)
+        else:
+            # Cooling ramp down
+            self.temperature_c = round(self.temperature_c - 0.95 * rate, 2)
+            if self.temperature_c <= self.recovery_threshold:
+                if self.phase not in ["COOLING_RECOVERY", "NORMALIZED"]:
+                    self.phase = "COOLING_RECOVERY"
+                    self.record_timeline_event(f"RECOVERY: Temperature normalized to {self.temperature_c}°C (≤ {self.recovery_threshold}°C).", SeverityLevel.NORMAL)
+            if self.temperature_c <= 24.5:
+                self.temperature_c = 24.5
+                self.thermal_direction = 1  # Loop cycle
+                self.phase = "RAMPING_UP"
+                self.simulated_fan_state = False
+
+        self._evaluate_thresholds()
+
+        # 2. Voltage Simulation (realistic DC swing 11.4V - 13.8V)
+        t = self.step_index * 0.08 * rate
+        self.voltage_v = round(12.4 + 1.2 * math.sin(t), 2)
+
+        # 3. Current Simulation (0.45A - 1.85A)
+        self.current_a = round(0.55 + 0.55 * math.cos(t * 1.3) + 0.15 * math.sin(t * 2.1), 3)
+        self.current_a = max(0.25, min(2.50, self.current_a))
+
+        # 4. Power Calculation: Strict P = V * I
+        self.power_w = round(self.voltage_v * self.current_a, 2)
+
+        # 5. GPS Simulation: Realistic smooth coordinate wander around Ladakh equipment staging point
+        walk_angle = self.step_index * 0.03 * rate
+        radius_lat = 0.0025
+        radius_lon = 0.0032
+        self.latitude = round(self.base_lat + radius_lat * math.sin(walk_angle), 6)
+        self.longitude = round(self.base_lon + radius_lon * math.cos(walk_angle), 6)
+        self.gps_fix = True
+
+    def get_state(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "running": self.running,
+            "speed": self.speed,
+            "phase": self.phase,
+            "temperature_c": self.temperature_c,
+            "voltage_v": self.voltage_v,
+            "current_a": self.current_a,
+            "power_w": self.power_w,
+            "pressure_kpa": self.pressure_kpa,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "gps_fix": self.gps_fix,
+            "warn_threshold": self.warn_threshold,
+            "crit_threshold": self.crit_threshold,
+            "recovery_threshold": self.recovery_threshold,
+            "simulated_fan_state": self.simulated_fan_state,
+            "simulated_mosfet_state": self.simulated_mosfet_state,
+            "recovery_status": self.recovery_status,
+            "severity": self.severity.value,
+            "timeline": self.timeline,
+            "is_simulated": True
+        }
+
+unified_demo = UnifiedDemoEngine()

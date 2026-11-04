@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.database import init_db
-from app.api import readings, events, settings as settings_api, simulation, demos
+from app.api import readings, events, settings as settings_api, simulation, demos, system
 from app.services.simulation_engine import telemetry_engine
 from app.services.gateway import gateway
 
@@ -49,6 +49,7 @@ app.add_middleware(
 )
 
 # API Routers
+app.include_router(system.router, prefix="/api")
 app.include_router(readings.router, prefix="/api")
 app.include_router(events.router, prefix="/api")
 app.include_router(settings_api.router, prefix="/api")

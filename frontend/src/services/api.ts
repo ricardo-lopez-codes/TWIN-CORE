@@ -7,7 +7,11 @@ import {
   EventSummary,
   GatewayModeInfo,
   SerialPortInfo,
-  DataMode
+  DataMode,
+  GpsLocation,
+  ConnectionStatus,
+  UnifiedDemoState,
+  SystemStatus
 } from '../types';
 
 const API_BASE = '/api';
@@ -117,3 +121,69 @@ export const EXPORT_URLS = {
   readingsCsv: (mins = 60) => `${API_BASE}/readings/export?minutes=${mins}`,
   eventsCsv: `${API_BASE}/events/export`
 };
+
+export async function fetchSystemStatus(): Promise<SystemStatus> {
+  const res = await fetch(`${API_BASE}/status`);
+  return res.json();
+}
+
+export async function fetchSensorsLatest(): Promise<SensorReading> {
+  const res = await fetch(`${API_BASE}/sensors/latest`);
+  return res.json();
+}
+
+export async function fetchSensorsHistory(minutes = 15, limit = 300, source?: string) {
+  const params = new URLSearchParams({ minutes: minutes.toString(), limit: limit.toString() });
+  if (source) params.append('source', source);
+  const res = await fetch(`${API_BASE}/sensors/history?${params}`);
+  return res.json();
+}
+
+export async function fetchGpsLocation(): Promise<GpsLocation> {
+  const res = await fetch(`${API_BASE}/gps/location`);
+  return res.json();
+}
+
+export async function fetchConnectionStatus(): Promise<ConnectionStatus> {
+  const res = await fetch(`${API_BASE}/connection/status`);
+  return res.json();
+}
+
+export async function connectSerial(port: string, baud_rate = 115200): Promise<ConnectionStatus> {
+  const res = await fetch(`${API_BASE}/connection/connect`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ port, baud_rate })
+  });
+  return res.json();
+}
+
+export async function disconnectSerial(): Promise<ConnectionStatus> {
+  const res = await fetch(`${API_BASE}/connection/disconnect`, {
+    method: 'POST'
+  });
+  return res.json();
+}
+
+export async function startUnifiedDemo(options?: { speed?: number; temperature?: number; voltage?: number; current?: number }) {
+  const res = await fetch(`${API_BASE}/demo/start`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'start', ...(options || {}) })
+  });
+  return res.json();
+}
+
+export async function stopUnifiedDemo() {
+  const res = await fetch(`${API_BASE}/demo/stop`, {
+    method: 'POST'
+  });
+  return res.json();
+}
+
+export async function resetUnifiedDemo() {
+  const res = await fetch(`${API_BASE}/demo/reset`, {
+    method: 'POST'
+  });
+  return res.json();
+}

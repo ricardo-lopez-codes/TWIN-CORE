@@ -17,7 +17,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { TwinResponseChart } from '../charts/TwinResponseChart';
 import { TwinEnclosure3D } from '../components/3d/TwinEnclosure3D';
 import { TerrainAltitude3D } from '../components/3d/TerrainAltitude3D';
-import { DigitalTwinInput, DigitalTwinResult } from '../types';
+import { DigitalTwinInput, DigitalTwinResult, SensorReading } from '../types';
 import { runDigitalTwin, EXPORT_URLS } from '../services/api';
 
 const DEFAULT_INPUTS: DigitalTwinInput = {
@@ -31,11 +31,26 @@ const DEFAULT_INPUTS: DigitalTwinInput = {
   cold_start: true
 };
 
-export const DigitalTwinPage: React.FC = () => {
+interface DigitalTwinPageProps {
+  reading?: SensorReading;
+}
+
+export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ reading }) => {
   const [inputs, setInputs] = useState<DigitalTwinInput>(DEFAULT_INPUTS);
   const [result, setResult] = useState<DigitalTwinResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [viewTab, setViewTab] = useState<'both' | '3d' | 'charts'>('both');
+
+  const handleSyncWithSensors = () => {
+    if (reading) {
+      setInputs((prev) => ({
+        ...prev,
+        ambient_temperature_c: reading.temperature_c,
+        atmospheric_pressure_kpa: reading.pressure_kpa || 69.5,
+        electronic_load_pct: Math.min(100, Math.max(10, Math.round((reading.power_w / 15.0) * 100)))
+      }));
+    }
+  };
 
   useEffect(() => {
     handleRunSimulation();
@@ -105,13 +120,24 @@ export const DigitalTwinPage: React.FC = () => {
                 Digital Twin Parameters
               </h3>
             </div>
-            <button
-              onClick={handleReset}
-              className="text-xs font-mono text-slate-500 hover:text-slate-900 flex items-center gap-1 font-semibold transition"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Reset
-            </button>
+            <div className="flex items-center gap-2">
+              {reading && (
+                <button
+                  onClick={handleSyncWithSensors}
+                  className="text-xs font-mono text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-200 flex items-center gap-1 font-semibold transition cursor-pointer"
+                  title="Prefill parameters from active sensor readings"
+                >
+                  Sync Active Telemetry
+                </button>
+              )}
+              <button
+                onClick={handleReset}
+                className="text-xs font-mono text-slate-500 hover:text-slate-900 flex items-center gap-1 font-semibold transition"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reset
+              </button>
+            </div>
           </div>
 
           {/* 1. Ambient Temperature */}

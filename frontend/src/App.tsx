@@ -3,6 +3,10 @@ import { Header } from './components/Header';
 import { Sidebar, PageId } from './components/Sidebar';
 import { OverviewPage } from './pages/OverviewPage';
 import { LiveMonitoringPage } from './pages/LiveMonitoringPage';
+import { GpsTrackingPage } from './pages/GpsTrackingPage';
+import { DemoSimulationPage } from './pages/DemoSimulationPage';
+import { HardwareConnectionPage } from './pages/HardwareConnectionPage';
+import { PowerManagementPage } from './pages/PowerManagementPage';
 import { TempDemoPage } from './pages/TempDemoPage';
 import { PressureDemoPage } from './pages/PressureDemoPage';
 import { PowerDemoPage } from './pages/PowerDemoPage';
@@ -17,6 +21,7 @@ import {
   TempDemoState,
   PressureDemoState,
   PowerDemoState,
+  UnifiedDemoState,
   DataMode,
   SeverityLevel
 } from './types';
@@ -127,6 +132,30 @@ const INITIAL_POWER_DEMO: PowerDemoState = {
   safety_note: ''
 };
 
+const INITIAL_UNIFIED_DEMO: UnifiedDemoState = {
+  name: 'Unified System Demo',
+  running: false,
+  speed: 1.0,
+  phase: 'IDLE',
+  temperature_c: 24.8,
+  voltage_v: 12.0,
+  current_a: 0.5,
+  power_w: 6.0,
+  pressure_kpa: 69.5,
+  latitude: 34.1526,
+  longitude: 77.5771,
+  gps_fix: true,
+  warn_threshold: 60.0,
+  crit_threshold: 70.0,
+  recovery_threshold: 57.0,
+  simulated_fan_state: false,
+  simulated_mosfet_state: 'ACTIVE',
+  recovery_status: 'NORMAL',
+  severity: 'NORMAL',
+  timeline: [],
+  is_simulated: true
+};
+
 export const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<PageId>('overview');
   const [mode, setModeState] = useState<DataMode>('SIMULATION');
@@ -139,6 +168,7 @@ export const App: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   // Demo States
+  const [unifiedDemoState, setUnifiedDemoState] = useState<UnifiedDemoState>(INITIAL_UNIFIED_DEMO);
   const [tempDemoState, setTempDemoState] = useState<TempDemoState>(INITIAL_TEMP_DEMO);
   const [pressureDemoState, setPressureDemoState] = useState<PressureDemoState>(INITIAL_PRESSURE_DEMO);
   const [powerDemoState, setPowerDemoState] = useState<PowerDemoState>(INITIAL_POWER_DEMO);
@@ -189,6 +219,7 @@ export const App: React.FC = () => {
       setActiveDemoName(msg.active_demo);
 
       if (msg.demo_states) {
+        if (msg.demo_states.unified) setUnifiedDemoState(msg.demo_states.unified);
         if (msg.demo_states.temperature) setTempDemoState(msg.demo_states.temperature);
         if (msg.demo_states.pressure) setPressureDemoState(msg.demo_states.pressure);
         if (msg.demo_states.power) setPowerDemoState(msg.demo_states.power);
@@ -236,18 +267,46 @@ export const App: React.FC = () => {
         return (
           <LiveMonitoringPage
             reading={reading}
+            history={history}
             thresholds={thresholds}
             isStale={isStale}
           />
         );
+      case 'gps':
+        return (
+          <GpsTrackingPage
+            reading={reading}
+            mode={mode}
+          />
+        );
+      case 'digital_twin':
+        return <DigitalTwinPage reading={reading} />;
+      case 'demo_simulation':
+        return (
+          <DemoSimulationPage
+            reading={reading}
+            mode={mode}
+            thresholds={thresholds}
+            demoState={unifiedDemoState}
+            onModeChanged={setModeState}
+          />
+        );
+      case 'hardware':
+        return (
+          <HardwareConnectionPage
+            reading={reading}
+            mode={mode}
+            onModeChanged={setModeState}
+          />
+        );
+      case 'power_management':
+        return <PowerManagementPage />;
       case 'demo_temp':
         return <TempDemoPage demoState={tempDemoState} />;
       case 'demo_pressure':
         return <PressureDemoPage demoState={pressureDemoState} />;
       case 'demo_power':
         return <PowerDemoPage demoState={powerDemoState} />;
-      case 'digital_twin':
-        return <DigitalTwinPage />;
       case 'events':
         return <EventLogsPage />;
       case 'settings':

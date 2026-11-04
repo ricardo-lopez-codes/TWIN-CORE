@@ -11,6 +11,12 @@ export interface SensorReading {
   current_a: number;
   power_w: number;
   power_is_estimated: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
+  gps_fix?: boolean;
+  gps_timestamp?: string | null;
+  unit1_status?: string;
+  unit2_status?: string;
   fan_state: boolean;
   mosfet_state: string;
   packet_seq?: number;
@@ -170,6 +176,67 @@ export interface GatewayModeInfo {
   baud_rate: number;
   is_connected: boolean;
   last_packet_time: number | null;
+}
+
+export interface GpsLocation {
+  latitude: number | null;
+  longitude: number | null;
+  gps_fix: boolean;
+  gps_timestamp: string | null;
+  last_update: string | null;
+  is_simulated: boolean;
+  valid: boolean;
+  status_text: string;
+}
+
+export interface ConnectionStatus {
+  connected: boolean;
+  port: string | null;
+  baud_rate: number;
+  mode: DataMode;
+  bytes_received: number;
+  packets_received: number;
+  packet_errors: number;
+  last_packet_time: string | null;
+  unit1_status: string;
+  unit2_status: string;
+  available_ports: SerialPortInfo[];
+  raw_buffer: string[];
+}
+
+export interface UnifiedDemoState {
+  name: string;
+  running: boolean;
+  speed: number;
+  phase: string;
+  temperature_c: number;
+  voltage_v: number;
+  current_a: number;
+  power_w: number;
+  pressure_kpa: number;
+  latitude: number;
+  longitude: number;
+  gps_fix: boolean;
+  warn_threshold: number;
+  crit_threshold: number;
+  recovery_threshold: number;
+  simulated_fan_state: boolean;
+  simulated_mosfet_state: string;
+  recovery_status: string;
+  severity: SeverityLevel;
+  timeline: DemoTimelineEntry[];
+  is_simulated: boolean;
+}
+
+export interface SystemStatus {
+  status: string;
+  service: string;
+  version: string;
+  mode: DataMode;
+  unit1_status: string;
+  unit2_status: string;
+  active_demo: string | null;
+  timestamp: string;
 }
 
 export interface SerialPortInfo {

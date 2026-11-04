@@ -13,13 +13,20 @@ import {
   Boxes,
   LineChart,
   Layers,
-  Sparkles
+  Sparkles,
+  MapPin,
+  Activity,
+  Compass,
+  AlertTriangle,
+  CheckCircle2,
+  Navigation
 } from 'lucide-react';
 import { MetricCard } from '../components/MetricCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { LiveSensorChart } from '../charts/LiveSensorChart';
 import { TwinEnclosure3D } from '../components/3d/TwinEnclosure3D';
 import { TerrainAltitude3D } from '../components/3d/TerrainAltitude3D';
+import { GpsMap } from '../components/GpsMap';
 import { SensorReading, EventSummary, ThresholdSettings } from '../types';
 
 interface OverviewPageProps {
@@ -43,14 +50,89 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<'split' | '3d' | 'charts'>('split');
 
+  const isSimulated = reading.source === 'SIMULATION';
+  const hasGpsFix = Boolean(reading.gps_fix && reading.latitude != null && reading.longitude != null);
+
+  // Digital Twin Combined Stress Assessment
+  const tempExcess = Math.max(0, reading.temperature_c - 25.0);
+  const powerExcess = Math.max(0, reading.power_w - 6.0);
+  const calculatedRiskIndex = Math.min(100, Math.round(tempExcess * 1.5 + powerExcess * 4.0));
+  const riskLevel = calculatedRiskIndex > 65 ? 'HIGH RISK' : calculatedRiskIndex > 35 ? 'MODERATE RISK' : 'LOW RISK / NOMINAL';
+
   return (
     <div className="space-y-5">
+      {/* Top Architecture Status Bar: Mode, Unit 1, Unit 2, GPS */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-card grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
+        {/* Operating Mode */}
+        <div className="flex items-center gap-2.5">
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+            isSimulated ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
+          }`}>
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[10px] text-slate-400 uppercase font-bold">OPERATING MODE</div>
+            <div className="font-bold text-slate-800 truncate">
+              {isSimulated ? 'DEMO MODE (SIMULATED)' : 'LIVE HARDWARE MODE'}
+            </div>
+          </div>
+        </div>
+
+        {/* Unit 1 Status */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-slate-100 text-blue-600 flex items-center justify-center shrink-0">
+            <Radio className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[10px] text-slate-400 uppercase font-bold">UNIT 1 (SENSORS)</div>
+            <div className="font-bold text-slate-800 flex items-center gap-1.5 truncate">
+              <span className={`w-2 h-2 rounded-full ${reading.unit1_status === 'OFFLINE' ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`} />
+              {reading.unit1_status ?? (isStale ? 'OFFLINE' : 'ONLINE')}
+            </div>
+          </div>
+        </div>
+
+        {/* Unit 2 Status */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-slate-100 text-indigo-600 flex items-center justify-center shrink-0">
+            <Activity className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[10px] text-slate-400 uppercase font-bold">UNIT 2 (GATEWAY)</div>
+            <div className="font-bold text-slate-800 flex items-center gap-1.5 truncate">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              {reading.unit2_status ?? 'CONNECTED'}
+            </div>
+          </div>
+        </div>
+
+        {/* GPS Fix Status */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-slate-100 text-cyan-600 flex items-center justify-center shrink-0">
+            <MapPin className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[10px] text-slate-400 uppercase font-bold">GPS POSITIONING</div>
+            <div className="font-bold text-slate-800 flex items-center gap-1.5 truncate">
+              <span className={`w-2 h-2 rounded-full ${hasGpsFix ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              {hasGpsFix ? '3D FIX ACTIVE' : 'NO SATELLITE FIX'}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* View Mode Switcher Pill */}
-      <div className="flex items-center justify-center sm:justify-end">
-        <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-mono w-full sm:w-auto shadow-xs">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs font-mono text-slate-500">
+          <span className="font-bold text-slate-800">PRIMARY TELEMETRY DECK</span>
+          <span>•</span>
+          <span>Ladakh Environmental Baseline</span>
+        </div>
+
+        <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-mono shadow-xs">
           <button
             onClick={() => setViewMode('split')}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+            className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
               viewMode === 'split'
                 ? 'bg-white text-blue-700 font-bold shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -61,7 +143,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
           </button>
           <button
             onClick={() => setViewMode('3d')}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+            className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
               viewMode === '3d'
                 ? 'bg-white text-blue-700 font-bold shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -72,7 +154,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
           </button>
           <button
             onClick={() => setViewMode('charts')}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+            className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
               viewMode === 'charts'
                 ? 'bg-white text-blue-700 font-bold shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -84,45 +166,21 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         </div>
       </div>
 
-      {/* 5 Main Sensor Cards (with 3D perspective tilt) */}
+      {/* 5 Main Sensor Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* 1. Atmospheric Pressure */}
+        {/* 1. Ambient Temperature */}
         <MetricCard
-          label="Atmospheric Pressure"
-          value={reading.pressure_kpa}
-          unit="kPa abs"
-          normalRange={`>${thresholds.pressure_warn} kPa`}
-          status={reading.pressure_kpa <= thresholds.pressure_crit ? 'CRITICAL' : reading.pressure_kpa <= thresholds.pressure_warn ? 'WARNING' : 'NORMAL'}
-          icon={<Gauge className="w-4 h-4 text-sky-600" />}
-          subtitle="Ambient barometric pressure"
-          isStale={isStale}
-        />
-
-        {/* 2. Ambient Temperature */}
-        <MetricCard
-          label="Ambient Temperature"
+          label="Temperature"
           value={reading.temperature_c}
           unit="°C"
           normalRange={`<${thresholds.temp_warn}°C`}
           status={reading.temperature_c >= thresholds.temp_crit ? 'CRITICAL' : reading.temperature_c >= thresholds.temp_warn ? 'WARNING' : 'NORMAL'}
           icon={<Thermometer className="w-4 h-4 text-orange-500" />}
-          subtitle="External enclosure sensor"
+          subtitle="Unit 1 ambient sensor"
           isStale={isStale}
         />
 
-        {/* 3. Power Consumption (V x I) */}
-        <MetricCard
-          label="Power Consumption"
-          value={reading.power_w}
-          unit="W"
-          normalRange={`<${thresholds.power_warn} W`}
-          status={reading.power_w >= thresholds.power_crit ? 'CRITICAL' : reading.power_w >= thresholds.power_warn ? 'WARNING' : 'NORMAL'}
-          icon={<Zap className="w-4 h-4 text-amber-500" />}
-          subtitle="Calculated: P = V × I"
-          isStale={isStale}
-        />
-
-        {/* 4. Circuit Voltage */}
+        {/* 2. Circuit Voltage */}
         <MetricCard
           label="Input Voltage"
           value={reading.voltage_v}
@@ -134,7 +192,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
           isStale={isStale}
         />
 
-        {/* 5. Circuit Current */}
+        {/* 3. Circuit Current */}
         <MetricCard
           label="Input Current"
           value={reading.current_a}
@@ -142,79 +200,136 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
           normalRange={`<${thresholds.current_max} A`}
           status={reading.current_a > thresholds.current_max ? 'CRITICAL' : 'NORMAL'}
           icon={<Cpu className="w-4 h-4 text-indigo-600" />}
-          subtitle="Branch circuit draw"
+          subtitle="Branch circuit shunt"
           isStale={isStale}
         />
+
+        {/* 4. Power (P = V x I) */}
+        <MetricCard
+          label="Input Power"
+          value={reading.power_w}
+          unit="W"
+          normalRange={`<${thresholds.power_warn} W`}
+          status={reading.power_w >= thresholds.power_crit ? 'CRITICAL' : reading.power_w >= thresholds.power_warn ? 'WARNING' : 'NORMAL'}
+          icon={<Zap className="w-4 h-4 text-amber-500" />}
+          subtitle="Calculated: P = V × I"
+          isStale={isStale}
+        />
+
+        {/* 5. GPS Status Card */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-card flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-mono text-slate-500">GPS LOCATION</span>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+              hasGpsFix ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600'
+            }`}>
+              {hasGpsFix ? 'FIXED' : 'SEARCHING'}
+            </span>
+          </div>
+
+          <div className="my-1">
+            <div className="text-base font-bold font-mono text-slate-900 truncate">
+              {hasGpsFix ? `${reading.latitude?.toFixed(4)}°, ${reading.longitude?.toFixed(4)}°` : 'No Coordinate Fix'}
+            </div>
+            <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+              {hasGpsFix ? 'Ladakh Field Deployment' : 'Awaiting satellite lock'}
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-400">
+            <span>{isSimulated ? 'Simulated Route' : 'Hardware GNSS'}</span>
+            <MapPin className="w-3.5 h-3.5 text-blue-600" />
+          </div>
+        </div>
       </div>
 
-      {/* Secondary Actuator & Communication Indicators Bar */}
-      <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-card grid grid-cols-2 md:grid-cols-5 gap-4 text-xs font-mono">
-        {/* Fan state */}
-        <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-            reading.fan_state ? 'bg-blue-50 text-blue-600 border border-blue-200 animate-spin' : 'bg-slate-100 text-slate-500'
-          }`}>
-            <Fan className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">COOLING FAN</div>
-            <div className={`font-semibold ${reading.fan_state ? 'text-blue-700' : 'text-slate-700'}`}>
-              {reading.fan_state ? 'ACTIVE (100% RPM)' : 'STANDBY (OFF)'}
+      {/* Equipment Location Mini Preview & Digital Twin Risk Indicator */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Interactive Mini Map Preview (5 cols) */}
+        <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-4 shadow-card flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3 px-1">
+            <div className="flex items-center gap-2">
+              <Compass className="w-4 h-4 text-blue-600" />
+              <h3 className="text-xs font-sans font-bold uppercase tracking-wider text-slate-900">
+                Equipment Location & Map Preview
+              </h3>
             </div>
+            <span className="text-[11px] font-mono text-slate-500">
+              {hasGpsFix ? 'OSM Standard Grid' : 'Standby'}
+            </span>
           </div>
+
+          <GpsMap
+            latitude={reading.latitude}
+            longitude={reading.longitude}
+            gpsFix={reading.gps_fix}
+            isSimulated={isSimulated}
+            lastUpdate={reading.timestamp}
+            height="260px"
+            showRecenterButton={true}
+          />
         </div>
 
-        {/* MOSFET State */}
-        <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-            reading.mosfet_state === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-amber-50 text-amber-600 border border-amber-200'
-          }`}>
-            <Zap className="w-4 h-4" />
-          </div>
+        {/* Digital Twin Operating Risk Indicator (6 cols) */}
+        <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-card flex flex-col justify-between">
           <div>
-            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">LOAD CONTROL</div>
-            <div className="font-semibold text-slate-800">
-              {reading.mosfet_state}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-2">
+                <Boxes className="w-4 h-4 text-indigo-600" />
+                <h3 className="text-xs font-sans font-bold uppercase tracking-wider text-slate-900">
+                  Digital Twin Thermodynamic Risk Appraisal
+                </h3>
+              </div>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold ${
+                calculatedRiskIndex > 65
+                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                  : calculatedRiskIndex > 35
+                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+              }`}>
+                {riskLevel}
+              </span>
             </div>
-          </div>
-        </div>
 
-        {/* Device Operating State */}
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
-            <ShieldAlert className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">STATUS</div>
-            <div className="mt-0.5">
-              <StatusBadge status={isStale ? 'OFFLINE' : reading.severity} size="sm" />
+            {/* Risk Index Progress bar */}
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between text-xs font-mono">
+                <span className="text-slate-600">Combined Thermal & Dielectric Stress Index:</span>
+                <span className="font-bold text-slate-900">{calculatedRiskIndex} / 100</span>
+              </div>
+              <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                <div
+                  className={`h-full transition-all duration-300 rounded-full ${
+                    calculatedRiskIndex > 65
+                      ? 'bg-rose-500'
+                      : calculatedRiskIndex > 35
+                      ? 'bg-amber-500'
+                      : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${calculatedRiskIndex}%` }}
+                />
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* LoRa Sequence & Link */}
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-100 text-blue-600 flex items-center justify-center">
-            <Radio className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">LORA TELEMETRY</div>
-            <div className="text-slate-800 font-semibold">
-              Packet #{reading.packet_seq ?? '--'}
+            {/* Diagnostic recommendations */}
+            <div className="space-y-2 text-xs font-sans text-slate-600">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
+                <span>
+                  High-altitude air density derating (~60% of sea level mass airflow at Ladakh 4,000m ASL).
+                </span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
+                <span>
+                  Current power dissipation is <strong>{reading.power_w.toFixed(2)} W</strong> (<code className="font-mono bg-slate-100 px-1 py-0.2 rounded">P = V × I</code>).
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Last update */}
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
-            <Clock className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">FRESHNESS</div>
-            <div className="text-slate-800 font-semibold">
-              {isStale ? 'STALE / TIMEOUT' : reading.freshness_status}
-            </div>
+          <div className="pt-3 border-t border-slate-100 text-[11px] font-mono text-slate-400 italic">
+            Virtual model derived from ISA atmosphere and thermal transfer equations.
           </div>
         </div>
       </div>
@@ -326,8 +441,8 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         </div>
       )}
 
-      {/* Event Summary Card */}
-      <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-card">
+      {/* Protection Event Summary */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-card">
         <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-slate-700" />
@@ -342,7 +457,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex items-center justify-between">
             <span className="text-xs font-medium text-slate-600">Active Warnings</span>
             <span className={`text-2xl font-mono font-bold ${eventSummary.active_warnings > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
@@ -361,35 +476,6 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
             <span className="text-xs font-medium text-slate-600">Protection Status</span>
             <StatusBadge status={eventSummary.critical_faults > 0 ? 'CRITICAL' : eventSummary.active_warnings > 0 ? 'WARNING' : 'NORMAL'} size="md" />
           </div>
-        </div>
-
-        {/* Recent Protection Actions */}
-        <div>
-          <span className="text-[11px] font-sans font-bold uppercase tracking-wider text-slate-500 mb-2 block">
-            Recent Automatic Protection Actions
-          </span>
-          {eventSummary.recent_actions && eventSummary.recent_actions.length > 0 ? (
-            <div className="space-y-2">
-              {eventSummary.recent_actions.map((act, i) => (
-                <div key={i} className="flex items-start justify-between text-xs font-mono bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2 h-2 rounded-full bg-blue-600 mt-1" />
-                    <div>
-                      <span className="text-blue-700 font-semibold">{act.action}</span>
-                      <span className="text-slate-600 ml-2">— {act.reason}</span>
-                    </div>
-                  </div>
-                  <span className="text-[11px] text-slate-400 shrink-0 font-medium">
-                    {new Date(act.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-xs font-sans text-slate-500 py-2">
-              No recent protection overrides triggered. Circuit operating within nominal envelope.
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -2,13 +2,16 @@ import React from 'react';
 import {
   LayoutDashboard,
   Activity,
-  Flame,
-  Gauge,
-  Zap,
+  MapPin,
   Boxes,
+  Sparkles,
+  Usb,
+  Zap,
   ScrollText,
   Sliders,
   Radio,
+  Flame,
+  Gauge,
   Mountain,
   X
 } from 'lucide-react';
@@ -17,10 +20,14 @@ import { DataMode } from '../types';
 export type PageId =
   | 'overview'
   | 'live'
+  | 'gps'
+  | 'digital_twin'
+  | 'demo_simulation'
+  | 'hardware'
+  | 'power_management'
   | 'demo_temp'
   | 'demo_pressure'
   | 'demo_power'
-  | 'digital_twin'
   | 'events'
   | 'settings';
 
@@ -43,11 +50,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navItems = [
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'live', label: 'Live Monitoring', icon: <Activity className="w-4 h-4" /> },
-    { id: 'demo_temp', label: 'Temperature Demo', icon: <Flame className="w-4 h-4 text-orange-500" /> },
-    { id: 'demo_pressure', label: 'Pressure Demo', icon: <Gauge className="w-4 h-4 text-sky-500" /> },
-    { id: 'demo_power', label: 'Power Demo', icon: <Zap className="w-4 h-4 text-amber-500" /> },
-    { id: 'digital_twin', label: 'Digital Twin Sim', icon: <Boxes className="w-4 h-4 text-indigo-500" /> },
+    { id: 'live', label: 'Live Monitoring', icon: <Activity className="w-4 h-4 text-emerald-600" /> },
+    { id: 'gps', label: 'GPS Tracking', icon: <MapPin className="w-4 h-4 text-cyan-600" /> },
+    { id: 'digital_twin', label: 'Digital Twin', icon: <Boxes className="w-4 h-4 text-indigo-600" /> },
+    { id: 'demo_simulation', label: 'Demo Simulation', icon: <Sparkles className="w-4 h-4 text-amber-500" /> },
+    { id: 'hardware', label: 'Hardware Connection', icon: <Usb className="w-4 h-4 text-blue-600" /> },
+    { id: 'power_management', label: 'Power Management', icon: <Zap className="w-4 h-4 text-slate-400" /> },
     {
       id: 'events',
       label: 'Event Logs',

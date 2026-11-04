@@ -32,15 +32,21 @@ class SensorReading(BaseModel):
     current_a: float = Field(..., description="Circuit current in Amperes")
     power_w: float = Field(..., description="Calculated electrical power (V x I) in Watts")
     power_is_estimated: bool = Field(True, description="Indicates if power is calculated vs directly metered")
+    latitude: Optional[float] = Field(None, description="GPS latitude in decimal degrees (-90 to +90)")
+    longitude: Optional[float] = Field(None, description="GPS longitude in decimal degrees (-180 to +180)")
+    gps_fix: bool = Field(False, description="True if valid GPS satellite fix acquired")
+    gps_timestamp: Optional[str] = Field(None, description="GPS satellite timestamp UTC if available")
+    unit1_status: str = Field("ONLINE", description="UNIT 1 Sensor module link state")
+    unit2_status: str = Field("CONNECTED", description="UNIT 2 Gateway module link state")
     fan_state: bool = Field(False, description="Cooling fan ON/OFF state")
     mosfet_state: str = Field("ACTIVE", description="MOSFET/Load controller state (ACTIVE, DERATED, OFF)")
-    packet_seq: Optional[int] = Field(None, description="LoRa packet sequence counter")
+    packet_seq: Optional[int] = Field(None, description="Packet sequence counter")
     is_valid: bool = Field(True, description="Sensor validation check passed")
     freshness_status: str = Field("FRESH", description="FRESH, STALE, or OFFLINE")
     severity: SeverityLevel = SeverityLevel.NORMAL
     device_id: Optional[str] = Field("TWIN-CORE-UNIT1", description="Monitored remote unit ID")
-    lora_rssi: Optional[int] = Field(None, description="LoRa RSSI in dBm")
-    lora_snr: Optional[float] = Field(None, description="LoRa SNR in dB")
+    lora_rssi: Optional[int] = Field(None, description="LoRa/RF RSSI in dBm")
+    lora_snr: Optional[float] = Field(None, description="LoRa/RF SNR in dB")
 
 class ThresholdSettings(BaseModel):
     temp_warn: float = Field(60.0, ge=-20.0, le=120.0)
@@ -133,3 +139,48 @@ class SystemModeRequest(BaseModel):
     mode: DataMode
     serial_port: Optional[str] = "AUTO"
     baud_rate: Optional[int] = 115200
+
+class ConnectionRequest(BaseModel):
+    port: str = Field(..., description="Serial COM port name (e.g. COM3 or /dev/ttyUSB0)")
+    baud_rate: int = Field(115200, description="Serial baud rate, e.g. 9600, 115200")
+
+class ConnectionStatusResponse(BaseModel):
+    connected: bool
+    port: Optional[str] = None
+    baud_rate: int = 115200
+    mode: DataMode = DataMode.SIMULATION
+    bytes_received: int = 0
+    packets_received: int = 0
+    packet_errors: int = 0
+    last_packet_time: Optional[str] = None
+    unit1_status: str = "ONLINE"
+    unit2_status: str = "CONNECTED"
+    available_ports: List[Dict[str, Any]] = []
+    raw_buffer: List[str] = []
+
+class GpsLocationResponse(BaseModel):
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    gps_fix: bool = False
+    gps_timestamp: Optional[str] = None
+    last_update: Optional[str] = None
+    is_simulated: bool = False
+    valid: bool = False
+    status_text: str = "GPS Unavailable"
+
+class SystemStatusResponse(BaseModel):
+    status: str = "healthy"
+    service: str = "TWIN-CORE Dashboard"
+    version: str = "2.0.0"
+    mode: DataMode = DataMode.SIMULATION
+    unit1_status: str = "ONLINE"
+    unit2_status: str = "CONNECTED"
+    active_demo: Optional[str] = None
+    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+class DemoControlRequest(BaseModel):
+    action: str = Field(..., description="start, pause, stop, reset, set_speed, set_temperature, set_voltage, set_current")
+    speed: Optional[float] = Field(1.0, ge=0.2, le=10.0)
+    temperature: Optional[float] = None
+    voltage: Optional[float] = None
+    current: Optional[float] = None

@@ -19,7 +19,7 @@ from app.database import SessionLocal
 from app.services.gateway import gateway
 from app.services.threshold_engine import threshold_engine
 from app.services.event_logger import event_logger
-from app.services.demo_engine import temp_demo, pressure_demo, power_demo
+from app.services.demo_engine import temp_demo, pressure_demo, power_demo, unified_demo
 
 class TelemetryEngine:
     def __init__(self):
@@ -46,6 +46,8 @@ class TelemetryEngine:
             self.active_connections.discard(ws)
 
     def get_active_demo_name(self) -> Optional[str]:
+        if unified_demo.running or unified_demo.phase not in ["IDLE"]:
+            return "unified"
         if temp_demo.running or temp_demo.phase not in ["IDLE", "RECOVERED"]:
             return "temperature"
         if pressure_demo.running or pressure_demo.phase not in ["IDLE", "RECOVERED"]:
@@ -62,7 +64,34 @@ class TelemetryEngine:
         """
         active_demo = self.get_active_demo_name()
 
-        if active_demo == "temperature":
+        if active_demo == "unified":
+            unified_demo.tick()
+            state = unified_demo.get_state()
+            reading = SensorReading(
+                timestamp=datetime.utcnow(),
+                source=DataMode.SIMULATION,
+                temperature_c=state["temperature_c"],
+                pressure_kpa=state["pressure_kpa"],
+                voltage_v=state["voltage_v"],
+                current_a=state["current_a"],
+                power_w=state["power_w"],
+                power_is_estimated=True,
+                latitude=state["latitude"],
+                longitude=state["longitude"],
+                gps_fix=state["gps_fix"],
+                gps_timestamp=datetime.utcnow().isoformat(),
+                unit1_status="SIMULATED",
+                unit2_status="STANDBY",
+                fan_state=state["simulated_fan_state"],
+                mosfet_state=state["simulated_mosfet_state"],
+                packet_seq=state["step_index"],
+                is_valid=True,
+                freshness_status="FRESH",
+                severity=SeverityLevel(state["severity"]),
+                device_id="DEMO-UNIT1"
+            )
+
+        elif active_demo == "temperature":
             temp_demo.tick()
             state = temp_demo.get_state()
             reading = SensorReading(
@@ -172,6 +201,10 @@ class TelemetryEngine:
                 current_a=r.current_a,
                 power_w=r.power_w,
                 power_is_estimated=r.power_is_estimated,
+                latitude=r.latitude,
+                longitude=r.longitude,
+                gps_fix=r.gps_fix,
+                gps_timestamp=r.gps_timestamp,
                 fan_state=r.fan_state,
                 mosfet_state=r.mosfet_state,
                 packet_seq=r.packet_seq,
@@ -204,6 +237,10 @@ class TelemetryEngine:
                     "voltage_v": r.voltage_v,
                     "current_a": r.current_a,
                     "power_w": r.power_w,
+                    "latitude": r.latitude,
+                    "longitude": r.longitude,
+                    "gps_fix": bool(r.gps_fix),
+                    "gps_timestamp": r.gps_timestamp,
                     "fan_state": r.fan_state,
                     "mosfet_state": r.mosfet_state,
                     "severity": r.severity
@@ -222,6 +259,7 @@ class TelemetryEngine:
                 
                 # Gather demo states
                 demo_states = {
+                    "unified": unified_demo.get_state(),
                     "temperature": temp_demo.get_state(),
                     "pressure": pressure_demo.get_state(),
                     "power": power_demo.get_state()

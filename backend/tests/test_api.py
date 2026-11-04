@@ -120,3 +120,77 @@ def test_demos_api_direct():
 
     act_reset = perform_demo_action("temperature", DemoAction(action="reset"))
     assert act_reset["temperature_c"] == 25.0
+
+def test_system_v2_endpoints():
+    from app.api.system import (
+        get_system_status, get_sensors_latest, get_sensors_history,
+        get_gps_location, get_connection_status, start_demo_simulation,
+        stop_demo_simulation, reset_demo_simulation
+    )
+    from app.models.schemas import DemoControlRequest
+
+    # Status
+    status = get_system_status()
+    assert status.status == "healthy"
+    assert status.service is not None
+    assert status.unit1_status in ["ONLINE", "SEARCHING", "SIMULATED", "OFFLINE", "DISCONNECTED"]
+
+    # Sensors latest
+    latest = get_sensors_latest()
+    assert latest.temperature_c is not None
+    assert latest.power_w == round(latest.voltage_v * latest.current_a, 2)
+
+    # GPS location
+    gps = get_gps_location()
+    assert gps.status_text is not None
+    if gps.valid:
+        assert -90.0 <= gps.latitude <= 90.0
+        assert -180.0 <= gps.longitude <= 180.0
+
+    # Connection status
+    conn = get_connection_status()
+    assert "connected" in conn
+    assert "available_ports" in conn
+    assert "raw_buffer" in conn
+
+    # Unified Demo controls
+    start_res = start_demo_simulation(DemoControlRequest(action="start", speed=2.0))
+    assert start_res["status"] == "started"
+    assert start_res["demo_state"]["running"] is True
+    assert start_res["demo_state"]["speed"] == 2.0
+
+    stop_res = stop_demo_simulation()
+    assert stop_res["status"] == "stopped"
+    assert stop_res["demo_state"]["running"] is False
+
+    reset_res = reset_demo_simulation()
+    assert reset_res["status"] == "reset"
+    assert reset_res["demo_state"]["temperature_c"] == 24.8
+
+def test_proposed_hardware_packet_parsing():
+    import json
+    from app.services.gateway import gateway
+
+    # Proposed Unit 1 format
+    packet = {
+        "device_id": "TWINCORE-UNIT1",
+        "packet_id": 105,
+        "temperature": 32.25,
+        "voltage": 12.0,
+        "current": 1.25,
+        "latitude": 34.1526,
+        "longitude": 77.5771,
+        "gps_fix": True,
+        "timestamp": "2026-11-04T10:30:00"
+    }
+    line = json.dumps(packet)
+    parsed = gateway.parse_packet(line)
+    assert parsed is not None
+    assert parsed.temperature_c == 32.25
+    assert parsed.voltage_v == 12.0
+    assert parsed.current_a == 1.25
+    assert parsed.power_w == 15.0  # 12.0 * 1.25
+    assert parsed.latitude == 34.1526
+    assert parsed.longitude == 77.5771
+    assert parsed.gps_fix is True
+    assert parsed.device_id == "TWINCORE-UNIT1"
