@@ -51,6 +51,24 @@ def export_readings_csv(minutes: int = 60):
         headers={"Content-Disposition": "attachment; filename=twincore_telemetry.csv"}
     )
 
+@router.post("/telemetry")
+async def ingest_telemetry_line(payload: dict):
+    """
+    Ingests a raw serial line or telemetry object (from Web Serial or edge gateway)
+    and broadcasts to all WebSocket subscribers & updates digital twin state.
+    """
+    raw_line = payload.get("line") or payload.get("raw") or ""
+    if not raw_line:
+        return {"status": "error", "message": "No telemetry line provided"}
+    
+    reading = gateway.parse_packet(str(raw_line))
+    if reading:
+        gateway.last_valid_reading = reading
+        gateway.save_reading_to_db(reading)
+        await gateway.broadcast_reading(reading)
+        return {"status": "success", "reading": reading}
+    return {"status": "error", "message": "Failed to parse line or validation error"}
+
 @router.get("/network-time")
 def get_network_time():
     import time

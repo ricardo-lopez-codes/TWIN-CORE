@@ -101,6 +101,13 @@ export const TwincoreOsPage: React.FC = () => {
       const next = [...prev, { id: logIdCounter.current, time: nowStr, text: rawLine }];
       return next.length > 100 ? next.slice(-100) : next;
     });
+
+    // Ingest into backend (works both on Render cloud and local) to update Digital Twin & Live Monitoring
+    fetch('/api/readings/telemetry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ line: rawLine })
+    }).catch(() => {});
   };
 
   // Auto-scroll terminal
