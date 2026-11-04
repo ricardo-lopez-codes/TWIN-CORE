@@ -164,6 +164,70 @@ export const ThresholdAnalyzerPage: React.FC<Props> = ({ onThresholdsUpdated }) 
     showToast(`ntfy.sh alerts configured for topic: ${ntfyConfig.topic}`, 'success');
   };
 
+  const [isSimulatingBreach, setIsSimulatingBreach] = useState(false);
+  const [simulationType, setSimulationType] = useState<'voltage' | 'current' | 'temperature'>('temperature');
+  const [simulatedValue, setSimulatedValue] = useState<number | null>(null);
+
+  const handleSimulateThresholdBreach = async (type: 'voltage' | 'current' | 'temperature') => {
+    if (!ntfyConfig.topic) {
+      showToast('Please enter an ntfy topic name first', 'warn');
+      return;
+    }
+
+    setIsSimulatingBreach(true);
+    setSimulationType(type);
+
+    let val = 0;
+    let label = '';
+    let unit = '';
+    let limitVal = 0;
+    let tags = 'warning,electric_plug';
+
+    if (type === 'voltage') {
+      limitVal = thresholds.voltage.max;
+      val = Number((limitVal + 2.8).toFixed(2));
+      label = 'Main Rail Voltage';
+      unit = 'V';
+      tags = 'warning,zap';
+    } else if (type === 'current') {
+      limitVal = thresholds.current.max;
+      val = Math.round(limitVal + 450);
+      label = 'Inverter Shunt Current';
+      unit = 'mA';
+      tags = 'warning,flame';
+    } else {
+      limitVal = thresholds.temperature.max;
+      val = Number((limitVal + 14.5).toFixed(1));
+      label = 'High-Altitude Battery & Core Temperature';
+      unit = '°C';
+      tags = 'warning,thermometer,fire';
+    }
+
+    setSimulatedValue(val);
+
+    const title = `⚠️ CRITICAL EQUIPMENT ALERT: ${label} Out of Bounds!`;
+    const body = `[DEMO SIMULATION]: Current ${label} reading (${val} ${unit}) breached critical threshold limit (Max: ${limitVal} ${unit}). Immediate hardware shutdown / protection required!`;
+
+    const success = await dispatchNtfyAlert(
+      ntfyConfig.topic,
+      title,
+      body,
+      'urgent',
+      tags
+    );
+
+    setIsSimulatingBreach(false);
+
+    if (success) {
+      showToast(
+        `🚨 Notification sent to your phone! Simulated ${label} breach: ${val} ${unit} (Max: ${limitVal} ${unit})`,
+        'success'
+      );
+    } else {
+      showToast(`Simulation alert failed to send. Check ntfy topic or connection.`, 'warn');
+    }
+  };
+
   const handleTestNtfy = async () => {
     if (!ntfyConfig.topic) {
       showToast('Please enter an ntfy topic name first', 'warn');
@@ -550,6 +614,56 @@ export const ThresholdAnalyzerPage: React.FC<Props> = ({ onThresholdsUpdated }) 
                 <Save className="w-3.5 h-3.5" />
                 Save Topic
               </button>
+            </div>
+
+            {/* Threshold Breach Simulation Demo Box */}
+            <div className="pt-3 border-t border-slate-800/80 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono font-bold text-rose-300 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                  Simulate Threshold Breach Demo
+                </span>
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800">
+                  PUSH TO PHONE
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-400 font-mono">
+                Click any parameter below to immediately trigger an out-of-bounds surge that dispatches a high-priority alarm notification to your phone:
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  disabled={isSimulatingBreach}
+                  onClick={() => handleSimulateThresholdBreach('temperature')}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/40 text-rose-200 transition-all cursor-pointer"
+                >
+                  <Thermometer className="w-4 h-4 text-rose-400 mb-1" />
+                  <span className="text-[10px] font-mono font-bold">Temp Surge</span>
+                  <span className="text-[8px] text-rose-400">&gt;{thresholds.temperature.max}°C</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isSimulatingBreach}
+                  onClick={() => handleSimulateThresholdBreach('voltage')}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/60 border border-amber-500/40 text-amber-200 transition-all cursor-pointer"
+                >
+                  <Zap className="w-4 h-4 text-amber-400 mb-1" />
+                  <span className="text-[10px] font-mono font-bold">Overvoltage</span>
+                  <span className="text-[8px] text-amber-400">&gt;{thresholds.voltage.max}V</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isSimulatingBreach}
+                  onClick={() => handleSimulateThresholdBreach('current')}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/40 text-cyan-200 transition-all cursor-pointer"
+                >
+                  <Activity className="w-4 h-4 text-cyan-400 mb-1" />
+                  <span className="text-[10px] font-mono font-bold">Overcurrent</span>
+                  <span className="text-[8px] text-cyan-400">&gt;{thresholds.current.max}mA</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
