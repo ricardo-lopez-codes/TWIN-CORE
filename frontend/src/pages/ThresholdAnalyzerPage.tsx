@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import {
   analyzeSensorDataset,
+  analyzePdfDatasheet,
+  extractTextFromPdf,
   AiAnalysisResult
 } from '../services/analyzerEngine';
 import {
@@ -76,10 +78,27 @@ export const ThresholdAnalyzerPage: React.FC<Props> = ({ onThresholdsUpdated }) 
     }, 400);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setSelectedFile(file);
+
+    if (file.name.toLowerCase().endsWith('.pdf')) {
+      setIsAnalyzing(true);
+      try {
+        const buffer = await file.arrayBuffer();
+        const extractedText = await extractTextFromPdf(buffer);
+        const result = analyzePdfDatasheet(extractedText, file.name);
+        setAnalysisResult(result);
+        showToast(`PDF Datasheet analyzed! Extracted manufacturer limits.`, 'success');
+      } catch (err: any) {
+        showToast(`Failed to parse PDF: ${err.message}`, 'warn');
+      } finally {
+        setIsAnalyzing(false);
+      }
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
@@ -88,12 +107,29 @@ export const ThresholdAnalyzerPage: React.FC<Props> = ({ onThresholdsUpdated }) 
     reader.readAsText(file);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
     setSelectedFile(file);
+
+    if (file.name.toLowerCase().endsWith('.pdf')) {
+      setIsAnalyzing(true);
+      try {
+        const buffer = await file.arrayBuffer();
+        const extractedText = await extractTextFromPdf(buffer);
+        const result = analyzePdfDatasheet(extractedText, file.name);
+        setAnalysisResult(result);
+        showToast(`PDF Datasheet analyzed! Extracted manufacturer limits.`, 'success');
+      } catch (err: any) {
+        showToast(`Failed to parse PDF: ${err.message}`, 'warn');
+      } finally {
+        setIsAnalyzing(false);
+      }
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
@@ -248,7 +284,7 @@ export const ThresholdAnalyzerPage: React.FC<Props> = ({ onThresholdsUpdated }) 
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
-              accept=".csv,.json,.txt"
+              accept=".csv,.json,.pdf,.txt"
               className="hidden"
             />
             <div className="flex flex-col items-center justify-center space-y-3">
@@ -257,10 +293,10 @@ export const ThresholdAnalyzerPage: React.FC<Props> = ({ onThresholdsUpdated }) 
               </div>
               <div>
                 <p className="text-sm font-mono font-bold text-slate-200">
-                  {selectedFile ? selectedFile.name : 'Drop historical sensor dataset here or click to browse'}
+                  {selectedFile ? selectedFile.name : 'Drop equipment PDF datasheet, CSV, or JSON here or click to browse'}
                 </p>
                 <p className="text-xs text-slate-400 font-mono mt-1">
-                  Supports CSV or JSON logs containing Voltage, Current, Temperature, and Humidity columns
+                  Supports PDF Component Datasheets, CSV Telemetry Logs, or JSON Sensor Arrays
                 </p>
               </div>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-mono text-slate-300">
