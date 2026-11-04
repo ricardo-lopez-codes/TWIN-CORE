@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Sidebar, PageId } from './components/Sidebar';
 import { TwincoreOsPage } from './pages/TwincoreOsPage';
+import { ThresholdAnalyzerPage } from './pages/ThresholdAnalyzerPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { LiveMonitoringPage } from './pages/LiveMonitoringPage';
 import { GpsTrackingPage } from './pages/GpsTrackingPage';
@@ -254,6 +255,8 @@ export const App: React.FC = () => {
     switch (currentPage) {
       case 'twincore_os':
         return <TwincoreOsPage />;
+      case 'threshold_analyzer':
+        return <ThresholdAnalyzerPage />;
       case 'overview':
         return (
           <OverviewPage

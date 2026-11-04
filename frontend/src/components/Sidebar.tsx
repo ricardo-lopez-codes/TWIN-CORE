@@ -20,6 +20,7 @@ import { DataMode } from '../types';
 
 export type PageId =
   | 'twincore_os'
+  | 'threshold_analyzer'
   | 'overview'
   | 'live'
   | 'gps'
@@ -56,6 +57,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'TWINCORE OS (Serial)',
       icon: <Terminal className="w-4 h-4 text-[#00f2fe]" />,
       badgeText: 'LIVE'
+    },
+    {
+      id: 'threshold_analyzer',
+      label: 'Threshold Analyzer & Alerts',
+      icon: <Sliders className="w-4 h-4 text-emerald-500" />,
+      badgeText: 'AI'
     },
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'live', label: 'Live Monitoring', icon: <Activity className="w-4 h-4 text-emerald-600" /> },
